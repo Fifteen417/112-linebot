@@ -30,30 +30,27 @@ async function handleEvent(event) {
 
   let replyMessage = '';
 
-  const triggerKeywords = ['推薦', '詳細資訊', '比較'];
-  const shouldUseGemini = triggerKeywords.some(keyword => userMessage.includes(keyword));
+  if (userMessage.includes('你好') || userMessage.includes('嗨')) {
+    replyMessage = '你好！請問您想了解什麼筆記本電腦資訊呢？';
+  } else if (userMessage.includes('謝謝') || userMessage.includes('感謝')) {
+    replyMessage = '不客氣，很高兴为您服务！';
+    return client.replyMessage(event.replyToken, {
+      type: 'text',
+      text: replyMessage
+    });
+  } else if (userMessage.includes('推薦') && (userMessage.includes('品牌') || userMessage.includes('價格'))) {
+    // 提取品牌和價格資訊
+    const brand = extractBrand(userMessage);
+    const price = extractPrice(userMessage);
 
-  if (shouldUseGemini) {
-    replyMessage = await getGeminiResponse(userMessage);
+    // 使用 API 進行推薦
+    replyMessage = await getRecommendation(brand, price);
   } else {
-    switch (true) {
-      case userMessage.includes('你好'):
-        replyMessage = '歡迎使用筆記本電腦推薦助手！請問您需要什麼樣的幫助呢？';
-        break;
-      case userMessage.includes('筆記本'):
-        replyMessage = '好的，請告訴我您的具體需求，比如性能、價格範圍、品牌偏好等。';
-        break;
-      case userMessage.includes('輕薄'):
-        replyMessage = '明白了，我會為您推薦符合這些要求的筆記本。';
-        break;
-      case userMessage.includes('決定購買'):
-        replyMessage = '不客氣，祝您購物愉快！如果您還有其他問題或需要幫助，隨時聯繫我。';
-        break;
-      case userMessage.includes('評分'):
-        replyMessage = '非常感謝！如果您願意的話，您可以給我一個評分，以幫助我們改進服務。評分範圍是1到5，1表示非常不滿意，5表示非常滿意。您願意給我評分嗎？';
-        break;
-      default:
-        replyMessage = '对不起，我不明白您的意思。請再說一遍。';
+    // 检查是否与笔记本电脑相关
+    if (isLaptopRelated(userMessage)) {
+      replyMessage = await getGeminiResponse(userMessage);
+    } else {
+      replyMessage = '我的回答範圍只有筆記本電腦。';
     }
   }
 
@@ -63,17 +60,65 @@ async function handleEvent(event) {
   });
 }
 
+// 提取品牌信息
+function extractBrand(message) {
+  const brandKeywords = ['品牌', '牌子'];
+  for (const keyword of brandKeywords) {
+    const startIndex = message.indexOf(keyword) + keyword.length;
+    const endIndex = message.indexOf(' ', startIndex);
+    if (endIndex > 0) {
+      return message.substring(startIndex, endIndex).trim();
+    }
+  }
+  return null;
+}
+
+// 提取价格信息
+function extractPrice(message) {
+  const priceKeywords = ['價格', '价钱'];
+  for (const keyword of priceKeywords) {
+    const startIndex = message.indexOf(keyword) + keyword.length;
+    const endIndex = message.indexOf(' ', startIndex);
+    if (endIndex > 0) {
+      return message.substring(startIndex, endIndex).trim();
+    }
+  }
+  return null;
+}
+
+// 判断是否与笔记本电脑相关
+function isLaptopRelated(message) {
+  const keywords = ['筆記本', '笔记本', '電腦', '电脑', '性能', '配置', '重量', '螢幕', '屏幕', '尺寸', '容量'];
+  return keywords.some(keyword => message.includes(keyword));
+}
+
+// 使用 API 进行推荐
+async function getRecommendation(brand, price) {
+  const url = 'https://your-api-endpoint.com/recommend'; // 替换为您的 API 端点
+  try {
+    const response = await axios.post(url, {
+      brand: brand,
+      price: price,
+    });
+    return response.data.recommendation;
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    return '抱歉，我无法为您推荐笔记本。';
+  }
+}
+
+// 使用 Gemini API 获取回答
 async function getGeminiResponse(message) {
-  const url = 'https://generativelanguage.googleapis.com/v1/models:generateText';  // 正確的 Gemini API URL
+  const url = 'https://generativelanguage.googleapis.com/v1/models:generateText'; 
   const apiKey = process.env.GEMINI_API_KEY;
 
   try {
     const response = await axios.post(url, {
       prompt: message,
       max_tokens: 100,
-      temperature: 0.7,  // 可選參數，控制回應的創造性
-      top_k: 40,        // 可選參數，控制回應的選擇範圍
-      top_p: 0.9,       // 可選參數，控制回應的可能性分佈
+      temperature: 0.7,  
+      top_k: 40,        
+      top_p: 0.9,       
     }, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -84,7 +129,7 @@ async function getGeminiResponse(message) {
     return response.data.text;
   } catch (error) {
     console.error('Error fetching response from Gemini API:', error);
-    return '抱歉，我無法處理您的請求。';
+    return '抱歉，我无法处理您的请求。';
   }
 }
 
