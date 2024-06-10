@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const line = require('@line/bot-sdk');
+const axios = require('axios');
 
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
@@ -62,6 +63,23 @@ function handleEvent(event) {
     type: 'text',
     text: replyMessage
   });
+}
+
+async function getGeminiResponse(message) {
+  const url = 'https://generativelanguage.googleapis.com/$discovery/rest?version=v1';  // 替换为实际的Gemini API URL
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  try {
+    const response = await axios.post(url, {
+      prompt: message,
+      apiKey: apiKey,
+    });
+
+    return response.data.reply;  // 根据实际的API响应格式调整
+  } catch (error) {
+    console.error('Error fetching response from Gemini API:', error);
+    return '抱歉，我无法处理您的请求。';
+  }
 }
 
 const port = process.env.PORT || 3000;
