@@ -30,31 +30,30 @@ async function handleEvent(event) {
 
   let replyMessage = '';
 
-  const triggerKeywords = ['推荐', '详细信息', '比较'];
+  const triggerKeywords = ['推薦', '詳細資訊', '比較'];
   const shouldUseGemini = triggerKeywords.some(keyword => userMessage.includes(keyword));
-
 
   if (shouldUseGemini) {
     replyMessage = await getGeminiResponse(userMessage);
   } else {
     switch (true) {
       case userMessage.includes('你好'):
-        replyMessage = '欢迎使用筆記本電腦推荐助手！请问您需要什么样的帮助呢？';
+        replyMessage = '歡迎使用筆記本電腦推薦助手！請問您需要什麼樣的幫助呢？';
         break;
       case userMessage.includes('筆記本'):
-        replyMessage = '好的，请告诉我您的具体需求，比如性能、价格范围、品牌偏好等。';
+        replyMessage = '好的，請告訴我您的具體需求，比如性能、價格範圍、品牌偏好等。';
         break;
-      case userMessage.includes('轻薄'):
-        replyMessage = '明白了，我会为您推荐符合这些要求的笔记本。';
+      case userMessage.includes('輕薄'):
+        replyMessage = '明白了，我會為您推薦符合這些要求的筆記本。';
         break;
-      case userMessage.includes('决定购买'):
-        replyMessage = '不客气，祝您购物愉快！如果您还有其他问题或需要帮助，随时联系我。';
+      case userMessage.includes('決定購買'):
+        replyMessage = '不客氣，祝您購物愉快！如果您還有其他問題或需要幫助，隨時聯繫我。';
         break;
-      case userMessage.includes('评分'):
-        replyMessage = '非常感谢！如果您愿意的话，您可以给我一个评分，以帮助我们改进服务。评分范围是1到5，1表示非常不满意，5表示非常满意。您愿意给我评分吗？';
+      case userMessage.includes('評分'):
+        replyMessage = '非常感謝！如果您願意的話，您可以給我一個評分，以幫助我們改進服務。評分範圍是1到5，1表示非常不滿意，5表示非常滿意。您願意給我評分嗎？';
         break;
       default:
-        replyMessage = '对不起，我不明白您的意思。请再说一遍。';
+        replyMessage = '对不起，我不明白您的意思。請再說一遍。';
     }
   }
 
@@ -65,14 +64,16 @@ async function handleEvent(event) {
 }
 
 async function getGeminiResponse(message) {
-  const url = 'https://generativelanguage.googleapis.com/$discovery/rest?version=v1';  // 替换为实际的Gemini API URL
+  const url = 'https://generativelanguage.googleapis.com/v1/models:generateText';  // 正確的 Gemini API URL
   const apiKey = process.env.GEMINI_API_KEY;
 
   try {
     const response = await axios.post(url, {
       prompt: message,
       max_tokens: 100,
-      apiKey: apiKey,
+      temperature: 0.7,  // 可選參數，控制回應的創造性
+      top_k: 40,        // 可選參數，控制回應的選擇範圍
+      top_p: 0.9,       // 可選參數，控制回應的可能性分佈
     }, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -80,10 +81,10 @@ async function getGeminiResponse(message) {
       }
     });
 
-    return response.data.choices[0].text  // 根据实际的API响应格式调整
+    return response.data.text;
   } catch (error) {
     console.error('Error fetching response from Gemini API:', error);
-    return '抱歉，我无法处理您的请求。';
+    return '抱歉，我無法處理您的請求。';
   }
 }
 
