@@ -13,6 +13,6 @@
     "axios": "^1.7.2",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "google-generativeai": "^1.0.0"
+    "google-generativeai": "^0.6.0"
   }
 }
