@@ -14,7 +14,6 @@ from google.generativeai import GenerativeModel
 
 apiKey = os.environ.get('GEMINI_API_KEY')
 
-# 设置 LINE Channel Access Token 和 Channel Secret
 line_bot_api = LineBotApi(os.environ['CHANNEL_ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
 
