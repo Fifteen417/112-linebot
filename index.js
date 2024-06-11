@@ -1,16 +1,19 @@
 require('dotenv').config();
 const express = require('express');
-const line = require('@line/bot-sdk');
-const axios = require('axios');
+const { LineBotApi, WebhookHandler } = require('@line/bot-sdk');
+const { GenerativeModel } = require('google-generativeai');
 
-const config = {
-  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.CHANNEL_SECRET
-};
+// 设置环境变量
+const apiKey = process.env.GEMINI_API_KEY;
 
-const client = new line.Client(config);
+// 设置 LINE Channel Access Token 和 Channel Secret
+const lineBotApi = new LineBotApi(process.env.CHANNEL_ACCESS_TOKEN);
+const handler = new WebhookHandler(process.env.CHANNEL_SECRET);
+
+// 创建 Express 应用
 const app = express();
 
+// 处理 LINE Webhook
 app.post('/webhook', line.middleware(config), (req, res) => {
   Promise
     .all(req.body.events.map(handleEvent))
@@ -21,6 +24,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
     });
 });
 
+// 处理事件
 async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     return Promise.resolve(null);
@@ -30,28 +34,21 @@ async function handleEvent(event) {
 
   let replyMessage = '';
 
+  // 处理打招呼
   if (userMessage.includes('你好') || userMessage.includes('嗨')) {
     replyMessage = '你好！請問您想了解什麼筆記本電腦資訊呢？';
-  } else if (userMessage.includes('謝謝') || userMessage.includes('感謝')) {
+  } 
+  // 处理结束对话
+  else if (userMessage.includes('謝謝') || userMessage.includes('感謝')) {
     replyMessage = '不客氣，很高兴为您服务！';
     return client.replyMessage(event.replyToken, {
       type: 'text',
       text: replyMessage
     });
-  } else if (userMessage.includes('推薦') && (userMessage.includes('品牌') || userMessage.includes('價格'))) {
-    // 提取品牌和價格資訊
-    const brand = extractBrand(userMessage);
-    const price = extractPrice(userMessage);
-
-    // 使用 API 進行推薦
-    replyMessage = await getRecommendation(brand, price);
-  } else {
-    // 检查是否与笔记本电脑相关
-    if (isLaptopRelated(userMessage)) {
-      replyMessage = await getGeminiResponse(userMessage);
-    } else {
-      replyMessage = '我的回答範圍只有筆記本電腦。';
-    }
+  } 
+  // 处理其他请求
+  else {
+    replyMessage = await getGeminiResponse(userMessage);
   }
 
   return client.replyMessage(event.replyToken, {
@@ -60,78 +57,29 @@ async function handleEvent(event) {
   });
 }
 
-// 提取品牌信息
-function extractBrand(message) {
-  const brandKeywords = ['品牌', '牌子'];
-  for (const keyword of brandKeywords) {
-    const startIndex = message.indexOf(keyword) + keyword.length;
-    const endIndex = message.indexOf(' ', startIndex);
-    if (endIndex > 0) {
-      return message.substring(startIndex, endIndex).trim();
-    }
-  }
-  return null;
-}
-
-// 提取价格信息
-function extractPrice(message) {
-  const priceKeywords = ['價格', '价钱'];
-  for (const keyword of priceKeywords) {
-    const startIndex = message.indexOf(keyword) + keyword.length;
-    const endIndex = message.indexOf(' ', startIndex);
-    if (endIndex > 0) {
-      return message.substring(startIndex, endIndex).trim();
-    }
-  }
-  return null;
-}
-
-// 判断是否与笔记本电脑相关
-function isLaptopRelated(message) {
-  const keywords = ['筆記本', '笔记本', '電腦', '电脑', '性能', '配置', '重量', '螢幕', '屏幕', '尺寸', '容量'];
-  return keywords.some(keyword => message.includes(keyword));
-}
-
-// 使用 API 进行推荐
-async function getRecommendation(brand, price) {
-  const url = 'https://your-api-endpoint.com/recommend'; // 替换为您的 API 端点
-  try {
-    const response = await axios.post(url, {
-      brand: brand,
-      price: price,
-    });
-    return response.data.recommendation;
-  } catch (error) {
-    console.error('Error fetching recommendations:', error);
-    return '抱歉，我无法为您推荐笔记本。';
-  }
-}
-
 // 使用 Gemini API 获取回答
 async function getGeminiResponse(message) {
-  const url = 'https://generativelanguage.googleapis.com/v1/models:generateText'; 
-  const apiKey = process.env.GEMINI_API_KEY;
-
+  const generationConfig = {
+    temperature: 1,
+    top_p: 0.95,
+    top_k: 64,
+    max_output_tokens: 8192,
+    response_mime_type: 'text/plain',
+  };
+  const model = new GenerativeModel({
+    model_name: 'gemini-1.5-flash',
+    generation_config: generationConfig,
+  });
+  
   try {
-    const response = await axios.post(url, {
-      prompt: message,
-      max_tokens: 100,
-      temperature: 0.7,  
-      top_k: 40,        
-      top_p: 0.9,       
-    }, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    return response.data.text;
+    const response = await model.generateContent([message]);
+    return response.text;
   } catch (error) {
     console.error('Error fetching response from Gemini API:', error);
     return '抱歉，我无法处理您的请求。';
   }
 }
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
