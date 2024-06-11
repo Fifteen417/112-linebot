@@ -12,7 +12,6 @@ from linebot.models import (
 )
 from google.generativeai import GenerativeModel
 
-# 设置环境变量
 apiKey = os.environ.get('GEMINI_API_KEY')
 
 # 设置 LINE Channel Access Token 和 Channel Secret
