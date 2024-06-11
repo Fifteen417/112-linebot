@@ -1,9 +1,9 @@
 {
   "name": "line-bot",
   "version": "1.0.0",
-  "main": "index.js", // 这行可以保留，但不再与代码逻辑相关
+  "main": "index.js",
   "scripts": {
-    "start": "python app.py"  // 修改为运行 Python 文件
+    "start": "python app.py" 
   },
   "keywords": [],
   "author": "",
