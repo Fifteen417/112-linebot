@@ -1,3 +1,4 @@
 flask
 google-generativeai
-C:/line-bot-sdk-python
+./line-bot-sdk-python
+line-bot-sdk-python==1.19.0
