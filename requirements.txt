@@ -1,3 +1,3 @@
 flask
 google-generativeai
-git+https://github.com/line/line-bot-sdk-python.git
+C:/line-bot-sdk-python
