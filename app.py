@@ -1,13 +1,13 @@
 import os
 import json
 from flask import Flask, request, jsonify
-from linebot import (
+from linebot.v3 import (
     LineBotApi, WebhookHandler
 )
-from linebot.exceptions import (
+from linebot.v3.exceptions import (
     InvalidSignatureError
 )
-from linebot.models import (
+from linebot.v3.models import (
     MessageEvent, TextMessage, TextSendMessage,
 )
 from google.generativeai import GenerativeModel
